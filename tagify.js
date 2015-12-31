@@ -94,13 +94,17 @@ if (window.TagifyJS)   {
         }
 
         function _addItem(elemInput, strItemContents)   {
-            var listItem, tagList;
+            var listItem, tagList, hiddenInput, cleanedVal;
 
             if (elemInput && elemInput.parentElement)   {
-                tagList = elemInput.parentElement.querySelector("ul");
+                tagList = elemInput.parentElement.querySelector(".tagify-me-ul");
+                hiddenInput = elemInput.parentElement.querySelector(".tagify-me-hidden");
+
                 if (tagList)    {
                     listItem = _domElementFromHtmlString(liTemplate.format(strItemContents));
                     tagList.appendChild(listItem);
+                    cleanedVal = strItemContents.replace(/,/gi, "$$$");
+                    hiddenInput.value = hiddenInput.value ? hiddenInput.value + "," + cleanedVal : cleanedVal;
 
                     // TODO: Insane overkill. Consider create the "a" with createElement
                     // and putting the event handler on only each new anchor element here.
@@ -140,8 +144,8 @@ if (window.TagifyJS)   {
                 tagHost,
                 strOldCss,
                 aTagValues,
+                hiddenInput,
                 mainTemplate,
-                liContents,
                 newElem,
                 i, j, id;
 
@@ -149,10 +153,10 @@ if (window.TagifyJS)   {
 
             _createInternalCSS();
 
-            mainTemplate = '<div class="{2} tagify-me-div">'
+            mainTemplate = '<div class="{1} tagify-me-div">'
                 + '<input type="hidden" id="{0}" class="tagify-me-hidden">'
                 + '<input type="text" id={0}_text" class="tagify-me-text" />'
-                + '<ul id="{0}_ul" class="tagify-me-ul">{1}</ul>'
+                + '<ul id="{0}_ul" class="tagify-me-ul"></ul>'
                 + '</div>';
 
             elementsToTagify = document.querySelectorAll(objSelector);
@@ -160,11 +164,15 @@ if (window.TagifyJS)   {
             for (i=0; i<elementsToTagify.length; i++)   {
                 tagHost = elementsToTagify[i];
 
-                if (!hasClass(tagHost, "tagify-me-div"))    {
-
-                    liContents = '';
+                // TODO: Consider marking each tagify-me element with a common
+                // class and just checking for that here.
+                if (hasClass(tagHost, "tagify-me-div") || hasClass(tagHost, "tagify-me-hidden"))    {
+                    // TODO: Pass back the parent div if it's the hidden input.
+                    returnVal.push(tagHost);
+                }   else    {
                     newElem = undefined;
                     strOldCss = tagHost.className;
+                    aTagValues = [];
 
                     id = "tagifyMe_" + new Date().getTime();
 
@@ -172,22 +180,22 @@ if (window.TagifyJS)   {
                         id = tagHost.id || id;
 
                         aTagValues = tagHost.value.split(',');
-                        for (j=0; j<aTagValues.length; j++) {
-                            if (aTagValues[i])  {
-                                liContents += liTemplate.format(aTagValues[j].replace("$$$", ","));
-                            }
-                        }
                     }
 
-                    newElem = _domElementFromHtmlString(mainTemplate.format(id, liContents, strOldCss));
-                    returnVal.push(newElem);
+                    newElem = _domElementFromHtmlString(mainTemplate.format(id, strOldCss));
+                    hiddenInput = newElem.getElementsByClassName("tagify-me-hidden")[0];
 
                     // tagHost.outerHTML = htmlContent; // Unfortunately, you can't just set the outerHTML for [some?] elements.
                     tagHost.parentElement.replaceChild(newElem, tagHost);
+                    for (j=0; j<aTagValues.length; j++) {
+                        if (aTagValues[i])  {
+                            _addItem(hiddenInput, aTagValues[j].replace(/\$\$\$/g, ","));
+                        }
+                    }
+                    returnVal.push(newElem);
                 }
             }
 
-            [].forEach.call(document.getElementsByClassName("tagify-me-a"), fnAddRemoveTagEventHandler);
             [].forEach.call(document.getElementsByClassName("tagify-me-text"), fnAddNewTagInputKeyPress);
 
             return returnVal;
