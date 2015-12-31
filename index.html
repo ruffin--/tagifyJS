@@ -51,7 +51,7 @@
                 }
             });
 
-            TagifyJS(".tagify-me");
+            TagifyJS().getValue();
         </script>
      </head>
 
@@ -66,19 +66,26 @@
 
 <br>
 
-        <div class="tagify-me">JIVEPANTS</div>
+    <div class="one two three"><h2>SPAM</h2></div>
+
+        <div class="tagify-me jivepants">JIVEPANTS</div>
 
         <form>
             <input class="tagify-me" id="tags" value="123,456,678" />
         </form>
 
-        <div class="tagify-me">JIVEPANTS</div>
+        <div>1</div>
+        <div class="notMe">2</div>
+        <div>3</div>
+        <div>4</div>
+
+        <!-- <div class="tagify-me">JIVEPANTS</div> -->
 
         <form>
             <input type="text" id="txt" />
             <input type="button" id="go" value="Click Me!" />
             <div id="outige"></div>
-            <input name="txt" id="txtVal" class="tagify-me" />
+            <!-- <input name="txt" id="txtVal" class="tagify-me" /> -->
         </form>
 
     </body>
