@@ -34,15 +34,6 @@ if (window.TagifyJS)   {
             window.alert("TagifyJS Error: " + strMsg);
         }
 
-        function _createTagifyListItem(strContents)   {
-            // liTemplate = '<li class="tagify-me-li">{0}'
-            //     + '<a href="#" class="tagify-me-a">x</a></li>';
-            var elemReturn = document.createElement("li");
-            elemReturn.className = "tagify-me-li";
-            elemReturn.innerHTML = strContents +'<a href="#" class="tagify-me-a">x</a>';
-            return elemReturn;
-        }
-
         function _domElementFromHtmlString(htmlString, tagType) {
             var elemReturn;
 
@@ -154,7 +145,7 @@ if (window.TagifyJS)   {
             anchor.addEventListener("click", fnRemoveTagEventHandler);
         }
 
-        function _addItem(elemInput, strItemContents)   {
+        function _addItem(elemInput, strItemContents, readOnly)   {
             var listItem, tagUL, hiddenInput, cleanedVal;
 
             if (elemInput && elemInput.parentElement)   {
@@ -167,8 +158,14 @@ if (window.TagifyJS)   {
                 _removeTagEngine(tagUL, strItemContents);
 
                 if (tagUL)    {
-                    listItem = _createTagifyListItem(strItemContents);
+                    listItem = document.createElement("li");
+                    listItem.className = "tagify-me-li";
+                    listItem.innerHTML = strItemContents;
+                    if (!readOnly)  {
+                        listItem.innerHTML += '<a href="#" class="tagify-me-a">x</a>';
+                    }
                     tagUL.appendChild(listItem);
+
                     cleanedVal = strItemContents.replace(/,/gi, "###");
                     hiddenInput.value = hiddenInput.value ? hiddenInput.value + "," + cleanedVal : cleanedVal;
 
@@ -204,8 +201,9 @@ if (window.TagifyJS)   {
         // NOTE: If the selector passed is a string, note that what makes it match
         // that selector is probably blasted by the conversion to a tagify-me widget.
         // You'll want to put an id on any inputs you want to reference.
-        function _tagify(objSelector)  {
+        function _tagify(options)  {
             var returnVal = [],
+                strExposedInput,
                 elementsToTagify,
                 tagHost,
                 strOldCss,
@@ -215,18 +213,18 @@ if (window.TagifyJS)   {
                 newElem,
                 i, j, id;
 
-            objSelector = objSelector || ".tagify-me";
-
             _createInternalCSS();
+
+            strExposedInput = options.displayOnly ? '' : '<input type="text" id={0}_text" class="tagify-me-text" />';
 
             mainTemplate = '<div class="{1} tagify-me-div">'
                 // + '<input type="text" id="{0}" class="tagify-me-hidden" style="color:red">'
                 + '<input type="hidden" id="{0}" class="tagify-me-hidden" />'
-                + '<input type="text" id={0}_text" class="tagify-me-text" />'
+                + strExposedInput
                 + '<ul id="{0}_ul" class="tagify-me-ul"></ul>'
                 + '</div>';
 
-            elementsToTagify = document.querySelectorAll(objSelector);
+            elementsToTagify = document.querySelectorAll(options.selector);
 
             for (i=0; i<elementsToTagify.length; i++)   {
                 tagHost = elementsToTagify[i];
@@ -256,7 +254,7 @@ if (window.TagifyJS)   {
                     tagHost.parentElement.replaceChild(newElem, tagHost);
                     for (j=0; j<aTagValues.length; j++) {
                         if (aTagValues[i])  {
-                            _addItem(hiddenInput, aTagValues[j].replace(/###/g, ","));
+                            _addItem(hiddenInput, aTagValues[j].replace(/###/g, ","), options.displayOnly);
                         }
                     }
                     returnVal.push(newElem);
@@ -278,39 +276,53 @@ if (window.TagifyJS)   {
             _domDelayedSelectors = [];
         });
 
-        TagifyJS = function (objSelector)    {
+        TagifyJS = function (options)    {
             var returnVal;
-            if (_domContentLoaded)  {
-                returnVal = _tagify(objSelector);
-            }   else    {
-                _domDelayedSelectors.push(objSelector);
-                returnVal = [];
-            }
 
-            returnVal.getValue = function (specificInputName)    {
-                var i, hiddenInput,
-                    payload = [];
-
-                for (i=0; i<this.length; i++)   {
-                    hiddenInput = this[i].getElementsByClassName("tagify-me-hidden")[0];
-
-                    if (!specificInputName || hiddenInput.id === specificInputName) {
-                        payload.push({
-                            id: hiddenInput.id,
-                            value: hiddenInput.value
-                        });
-                    }
-                }
-
-                // TODO: I'm not sure if this makes things easier to use. If you unexpectedly
-                // have more than one Tagify on the DOM, this could really bork code expecting
-                // a single value.
-                // return 1 === payload.length ? payload[0].value : payload;
-                // Let's start by doing it iff there's a specific input
-                return specificInputName && payload.length > 0 ? payload[0].value : payload;
+            options = {
+                selector: options.selector || ".tagify-me",
+                displayOnly: options.displayOnly
             };
 
+            if (_domContentLoaded)  {
+                returnVal = _tagify(options);
+            }   else    {
+                // NOTE: This is why we can't add methods, etc for the return value in _tagify().
+                _domDelayedSelectors.push(options);
+                returnVal = [];
+            }
+            returnVal.options = options;
+
             return returnVal;
+        };
+
+        TagifyJS.getValue = function (specificInputName)    {
+            var i, allHiddenInputs,
+                specificInput,
+                payload = [];
+
+            if (specificInputName)  {
+                specificInput = document.getElementById(specificInputName);
+                allHiddenInputs = specificInput ? [specificInput] : [];
+            }   else    {
+                allHiddenInputs = document.getElementsByClassName("tagify-me-hidden");
+            }
+
+            // Strip everything but id and value for each input.
+            for (i=0; i < allHiddenInputs.length; i++)    {
+                // TODO: Potentially ignore displayOnly tagifies.
+                payload.push({
+                    id: allHiddenInputs[i].id,
+                    value: allHiddenInputs[i].value
+                });
+            }
+
+            // TODO: I'm not sure if this makes things easier to use. If you unexpectedly
+            // have more than one Tagify on the DOM, this could really bork code expecting
+            // a single value.
+            // return 1 === payload.length ? payload[0].value : payload;
+            // Let's start by doing it iff there's a specific input defined...
+            return specificInputName && 1 === payload.length ? payload[0].value : payload;
         };
     }());
 }

@@ -6,8 +6,6 @@
         <!-- script type="text/javascript" src="./jquery-1.11.3.js"></script -->
         <script type="text/javascript" src="./tagify.js"></script>
         <script>
-            var tags;
-
             // The document.addEventListener replicates $(document).ready() for
             // modern browsers (including IE9+).
             // More here: http://stackoverflow.com/a/21814964/1028230
@@ -18,7 +16,7 @@
 
                 if (btnValue)    {
                     btnValue.addEventListener("click", function () {
-                        tagCsv  = tags.getValue();
+                        tagCsv  = TagifyJS.getValue("tags");
                         if (!Array.isArray(tagCsv)) {
                             outige.innerHTML += "Value: " + tagCsv + "<br />";
                         }   else    {
@@ -31,7 +29,14 @@
             });
 
             document.addEventListener("DOMContentLoaded", function() {
-                tags = TagifyJS();
+                TagifyJS({
+                    selector: "#tags"
+                });
+
+                TagifyJS({
+                    selector: "#tags2",
+                    displayOnly: true
+                });
             });
         </script>
      </head>
