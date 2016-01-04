@@ -298,6 +298,7 @@ if (window.TagifyJS)   {
                 // have more than one Tagify on the DOM, this could really bork code expecting
                 // a single value.
                 // return 1 === payload.length ? payload[0].value : payload;
+                // Let's start by doing it iff there's a specific input
                 return specificInputName && payload.length > 0 ? payload[0].value : payload;
             };
 
