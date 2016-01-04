@@ -276,11 +276,29 @@ if (window.TagifyJS)   {
                 returnVal = _tagify(objSelector);
             }   else    {
                 _domDelayedSelectors.push(objSelector);
-                returnVal = {};
+                returnVal = [];
             }
 
-            returnVal.getValue = function ()    {
-                console.log(typeof this);
+            returnVal.getValue = function (specificInputName)    {
+                var i, hiddenInput,
+                    payload = [];
+
+                for (i=0; i<this.length; i++)   {
+                    hiddenInput = this[i].getElementsByClassName("tagify-me-hidden")[0];
+
+                    if (!specificInputName || hiddenInput.id === specificInputName) {
+                        payload.push({
+                            id: hiddenInput.id,
+                            value: hiddenInput.value
+                        });
+                    }
+                }
+
+                // TODO: I'm not sure if this makes things easier to use. If you unexpectedly
+                // have more than one Tagify on the DOM, this could really bork code expecting
+                // a single value.
+                // return 1 === payload.length ? payload[0].value : payload;
+                return specificInputName && payload.length > 0 ? payload[0].value : payload;
             };
 
             return returnVal;

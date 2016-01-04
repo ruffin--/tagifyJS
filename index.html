@@ -3,92 +3,49 @@
     <head>
         <title>Tags</title>
 
-        <style>
-/*            .tagify-me ul    {
-                margin: 0;
-                padding: 0;
-                list-style-type: none;
-            }
-
-            .tagify-me ul li {
-                display: inline;
-                padding: 6px 10px 8px 8px;
-                background-color: rgb(195,235,250);
-                color: rgb(15, 65, 90);
-                border-radius: 8px;
-            }
-
-            .tagify-me ul li a {
-                text-decoration: none;
-                color: rgb(5, 120, 175);
-                margin-left: 3px;
-            }*/
-
-        </style>
-
         <!-- script type="text/javascript" src="./jquery-1.11.3.js"></script -->
         <script type="text/javascript" src="./tagify.js"></script>
         <script>
+            var tags;
+
             // The document.addEventListener replicates $(document).ready() for
             // modern browsers (including IE9+).
             // More here: http://stackoverflow.com/a/21814964/1028230
             document.addEventListener("DOMContentLoaded", function() {
-                var go = document.getElementById("go"),
-                    txt = document.getElementById("txt"),
-                    outige = document.getElementById("outige");
+                var btnValue = document.getElementById("btnValue"),
+                    outige = document.getElementById("outige"),
+                    tagCsv;
 
-                if (txt && go)    {
-                    txt.addEventListener("keypress", function (e) {
-                        if (event.keyCode === 13)   {
-                            go.click();
-                            e.preventDefault();
+                if (btnValue)    {
+                    btnValue.addEventListener("click", function () {
+                        tagCsv  = tags.getValue();
+                        if (!Array.isArray(tagCsv)) {
+                            outige.innerHTML += "Value: " + tagCsv + "<br />";
+                        }   else    {
+                            for (i=0; i<tagCsv.length; i++) {
+                                outige.innerHTML += "ID: {0} Value: {1}<br />".format(tagCsv[i].id, tagCsv[i].value);
+                            }
                         }
-                    });
-
-                    go.addEventListener("click", function () {
-                        outige.innerHTML += "Clicked!<br />";
                     });
                 }
             });
 
             document.addEventListener("DOMContentLoaded", function() {
-                TagifyJS().getValue();
+                tags = TagifyJS();
             });
         </script>
      </head>
 
     <body>
-        <div>
-            <ul>
-                <li>First <a href="#">x</a></li>
-                <li>Second</li>
-                <li>Third</li>
-            </ul>
-        </div>
-
-<br>
-
-    <div class="one two three"><h2>SPAM</h2></div>
-
-        <div class="tagify-me jivepants">JIVEPANTS</div>
 
         <form>
             <input class="tagify-me" id="tags" value="123,456,6###78" />
+            <input class="tagify-me" id="tags2" value="91011,121314" />
+
+            <input type="button" id="btnValue" value="Get Value" />
         </form>
 
-        <div>1</div>
-        <div class="notMe">2</div>
-        <div>3</div>
-        <div>4</div>
-
-        <!-- <div class="tagify-me">JIVEPANTS</div> -->
-
-        <form>
-            <input type="text" id="txt" />
-            <input type="button" id="go" value="Click Me!" />
-            <div id="outige"></div>
-            <!-- <input name="txt" id="txtVal" class="tagify-me" /> -->
-        </form>
+        <div id="outige"></div>
 
     </body>
 </html>
