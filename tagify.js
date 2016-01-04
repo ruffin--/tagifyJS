@@ -296,6 +296,11 @@ if (window.TagifyJS)   {
             return returnVal;
         };
 
+        // This is to make JSLint happy, which wants Pascal-cased functions to be constructors.
+        TagifyJS.init = function (options)    {
+            this(options);
+        };
+
         TagifyJS.getValue = function (specificInputName)    {
             var i, allHiddenInputs,
                 specificInput,
