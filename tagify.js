@@ -27,18 +27,27 @@ if (window.TagifyJS)   {
     (function () {
         var _createdCSS = false,
             _domContentLoaded = false,
-            _domDelayedSelectors = [],
-            liTemplate;
+            _domDelayedSelectors = [];
 
-        liTemplate = '<li class="tagify-me-li">{0}'
-            + '<a href="#" class="tagify-me-a">x</a></li>';
 
         function _err(strMsg)   {
             window.alert("TagifyJS Error: " + strMsg);
         }
 
-        function _domElementFromHtmlString(htmlString) {
-            var elemReturn = document.createElement('span');
+        function _createTagifyListItem(strContents)   {
+            // liTemplate = '<li class="tagify-me-li">{0}'
+            //     + '<a href="#" class="tagify-me-a">x</a></li>';
+            var elemReturn = document.createElement("li");
+            elemReturn.className = "tagify-me-li";
+            elemReturn.innerHTML = strContents +'<a href="#" class="tagify-me-a">x</a>';
+            return elemReturn;
+        }
+
+        function _domElementFromHtmlString(htmlString, tagType) {
+            var elemReturn;
+
+            tagType = tagType || "span";
+            elemReturn = document.createElement(tagType);
             elemReturn.innerHTML = htmlString;
             return elemReturn;
         }
@@ -80,12 +89,61 @@ if (window.TagifyJS)   {
             }
         }
 
+        function _removeTagEngine(tagUL, valueToRemove)  {
+            var i, tempVal,
+                reEndsMatch, reMiddleMatch,
+                valueSansComma,
+                hiddenInput, allListItems, itemValue;
+
+            valueSansComma = valueToRemove.replace(/,/g, "###");
+
+            //------------------------------------------------------------------------
+            // First, remove this value from the hidden input element's value.
+            //------------------------------------------------------------------------
+            hiddenInput = tagUL.parentElement.querySelector(".tagify-me-hidden");
+            tempVal = hiddenInput.value;
+
+            // We could either cheat and put commas at the beginning and end of the values
+            // (,1,2,3,) or use a regexp with begin (^) and end ($) OR checks. We're doing
+            // the second for now.
+            reEndsMatch = new RegExp("^" + valueSansComma + ","
+                + "|"
+                + "," + valueSansComma + "$"
+            , "g");
+            reMiddleMatch = new RegExp("," + valueSansComma + ",", "g");
+
+            hiddenInput.value = hiddenInput.value.replace(reEndsMatch, "").replace(reMiddleMatch, ",");
+
+console.log("#### Cleaned to remove: " + valueSansComma + " - orig value: " + tempVal + " - new value: " + hiddenInput.value);
+
+            //------------------------------------------------------------------------
+            // Now update UI to remove this value.
+            //
+            // TODO: Consider checking for a match, and if none, skip the UI update.
+            // I'm going to be overly defensive for now and do both, no matter what,
+            // though at serious scale that's crazy insane.
+            //------------------------------------------------------------------------
+
+            allListItems = tagUL.querySelectorAll("li");
+
+            for (i=0; i < allListItems.length; i++) {
+                itemValue = allListItems[i].innerHTML.substr(0, allListItems[i].innerHTML.lastIndexOf("<a"));
+console.log("Current: " + itemValue + " :: value to remove: " + valueToRemove);
+                if (itemValue === valueToRemove)    {
+                    tagUL.removeChild(allListItems[i]);
+                }
+            }
+        }
+
         function fnRemoveTagEventHandler(el) {
-            var listItem, unorderedList;
+            var listItem, tagUL, itemValue;
 
             listItem = el.currentTarget.parentElement;
-            unorderedList = listItem.parentElement;
-            unorderedList.removeChild(listItem);
+            tagUL = listItem.parentElement;
+            itemValue = listItem.innerHTML;
+            itemValue = itemValue.substr(0, itemValue.indexOf("<a"));
+
+            _removeTagEngine(tagUL, itemValue);
         }
 
         function fnAddRemoveTagEventHandler(anchor) {
@@ -94,16 +152,21 @@ if (window.TagifyJS)   {
         }
 
         function _addItem(elemInput, strItemContents)   {
-            var listItem, tagList, hiddenInput, cleanedVal;
+            var listItem, tagUL, hiddenInput, cleanedVal;
 
             if (elemInput && elemInput.parentElement)   {
-                tagList = elemInput.parentElement.querySelector(".tagify-me-ul");
+                tagUL = elemInput.parentElement.querySelector(".tagify-me-ul");
                 hiddenInput = elemInput.parentElement.querySelector(".tagify-me-hidden");
 
-                if (tagList)    {
-                    listItem = _domElementFromHtmlString(liTemplate.format(strItemContents));
-                    tagList.appendChild(listItem);
-                    cleanedVal = strItemContents.replace(/,/gi, "$$$");
+                // Instead of deduping, I'm cheating by removing the new value
+                // if it already exists.
+                // TODO: Not horribly efficient, natch.
+                _removeTagEngine(tagUL, strItemContents);
+
+                if (tagUL)    {
+                    listItem = _createTagifyListItem(strItemContents);
+                    tagUL.appendChild(listItem);
+                    cleanedVal = strItemContents.replace(/,/gi, "###");
                     hiddenInput.value = hiddenInput.value ? hiddenInput.value + "," + cleanedVal : cleanedVal;
 
                     // TODO: Insane overkill. Consider create the "a" with createElement
@@ -154,7 +217,7 @@ if (window.TagifyJS)   {
             _createInternalCSS();
 
             mainTemplate = '<div class="{1} tagify-me-div">'
-                + '<input type="hidden" id="{0}" class="tagify-me-hidden">'
+                + '<input type="text" id="{0}" class="tagify-me-hidden" style="color:red">'
                 + '<input type="text" id={0}_text" class="tagify-me-text" />'
                 + '<ul id="{0}_ul" class="tagify-me-ul"></ul>'
                 + '</div>';
@@ -189,7 +252,7 @@ if (window.TagifyJS)   {
                     tagHost.parentElement.replaceChild(newElem, tagHost);
                     for (j=0; j<aTagValues.length; j++) {
                         if (aTagValues[i])  {
-                            _addItem(hiddenInput, aTagValues[j].replace(/\$\$\$/g, ","));
+                            _addItem(hiddenInput, aTagValues[j].replace(/###/g, ","));
                         }
                     }
                     returnVal.push(newElem);
