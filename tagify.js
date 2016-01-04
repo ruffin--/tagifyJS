@@ -90,7 +90,7 @@ if (window.TagifyJS)   {
         }
 
         function _removeTagEngine(tagUL, valueToRemove)  {
-            var i, tempVal,
+            var i,
                 reEndsMatch, reMiddleMatch,
                 valueSansComma,
                 hiddenInput, allListItems, itemValue;
@@ -101,7 +101,6 @@ if (window.TagifyJS)   {
             // First, remove this value from the hidden input element's value.
             //------------------------------------------------------------------------
             hiddenInput = tagUL.parentElement.querySelector(".tagify-me-hidden");
-            tempVal = hiddenInput.value;
 
             // We could either cheat and put commas at the beginning and end of the values
             // (,1,2,3,) or use a regexp with begin (^) and end ($) OR checks. We're doing
@@ -114,8 +113,6 @@ if (window.TagifyJS)   {
 
             hiddenInput.value = hiddenInput.value.replace(reEndsMatch, "").replace(reMiddleMatch, ",");
 
-console.log("#### Cleaned to remove: " + valueSansComma + " - orig value: " + tempVal + " - new value: " + hiddenInput.value);
-
             //------------------------------------------------------------------------
             // Now update UI to remove this value.
             //
@@ -123,12 +120,10 @@ console.log("#### Cleaned to remove: " + valueSansComma + " - orig value: " + te
             // I'm going to be overly defensive for now and do both, no matter what,
             // though at serious scale that's crazy insane.
             //------------------------------------------------------------------------
-
             allListItems = tagUL.querySelectorAll("li");
 
             for (i=0; i < allListItems.length; i++) {
                 itemValue = allListItems[i].innerHTML.substr(0, allListItems[i].innerHTML.lastIndexOf("<a"));
-console.log("Current: " + itemValue + " :: value to remove: " + valueToRemove);
                 if (itemValue === valueToRemove)    {
                     tagUL.removeChild(allListItems[i]);
                 }
@@ -182,8 +177,8 @@ console.log("Current: " + itemValue + " :: value to remove: " + valueToRemove);
 
         function fnNewTagInputKeyPress(e) {
             if (13 === event.keyCode)   {
-                console.log("Add new tag");
-                _addItem(e.target, "Testy");
+                _addItem(e.target, e.target.value);
+                e.target.value = "";
                 e.preventDefault();
             }
         }
@@ -217,7 +212,8 @@ console.log("Current: " + itemValue + " :: value to remove: " + valueToRemove);
             _createInternalCSS();
 
             mainTemplate = '<div class="{1} tagify-me-div">'
-                + '<input type="text" id="{0}" class="tagify-me-hidden" style="color:red">'
+                // + '<input type="text" id="{0}" class="tagify-me-hidden" style="color:red">'
+                + '<input type="hidden" id="{0}" class="tagify-me-hidden" />'
                 + '<input type="text" id={0}_text" class="tagify-me-text" />'
                 + '<ul id="{0}_ul" class="tagify-me-ul"></ul>'
                 + '</div>';
