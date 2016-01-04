@@ -60,7 +60,10 @@ if (window.TagifyJS)   {
                 styleElem.type = 'text/css';
 
                 styleContents += '.tagify-me-li {'
-                    + 'display: inline;'
+                    // + 'display: inline;'
+                    + 'float:left;'
+                    + 'list-style-type: none;'
+
                     + 'padding: 6px 10px 8px 8px;'
                     + 'background-color: rgb(195,235,250);'
                     + 'color: rgb(15, 65, 90);'
@@ -69,6 +72,7 @@ if (window.TagifyJS)   {
                 + '}';
 
                 styleContents += '.tagify-me-ul {'
+                    + "display:block;"
                     + 'text-decoration: none;'
                     + 'color: rgb(5, 120, 175);'
                     + 'margin-left: 3px;'
@@ -81,6 +85,10 @@ if (window.TagifyJS)   {
                     + 'color:blue;'
                     + 'text-decoration:none;'
                     + 'list-style-type: none;'
+                + '}';
+
+                styleContents += '.tagify-me-div    {'
+                    + 'display:inline-block;'
                 + '}';
 
                 styleElem.innerHTML = styleContents;
