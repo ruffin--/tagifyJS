@@ -209,11 +209,6 @@ if (window.TagifyJS)   {
                 }
             };
 
-            tagifyInstance.fnAddNewTagInputKeyPress = function (txt) {
-                txt.removeEventListener("keypress", tagifyInstance.fnNewTagInputKeyPress); // Remove if exists so that we don't double up the event handlers listening.
-                txt.addEventListener("keypress", tagifyInstance.fnNewTagInputKeyPress);
-            };
-
             tagifyInstance.getValue = function (specificInputName)    {
                 var k, allHiddenInputs,
                     specificInput,
@@ -251,17 +246,6 @@ if (window.TagifyJS)   {
             }   else    {
                 _createInternalCSS();
 
-                // strExposedInput = tagifyInstance.options.displayOnly
-                //     ? ''
-                //     : '<input type="text" id={0}_text" class="tagify-me-text" />';
-
-                // mainTemplate = '<div class="{1} tagify-me-div">'
-                //     + '<input type="text" id="{0}" class="tagify-me-hidden" style="color:red">'
-                //     // + '<input type="hidden" id="{0}" class="tagify-me-hidden" />'
-                //     + strExposedInput
-                //     + '<ul id="{0}_ul" class="tagify-me-ul"></ul>'
-                //     + '</div>';
-
                 elementsToTagify = document.querySelectorAll(tagifyInstance.options.selector);
 
                 for (i=0; i<elementsToTagify.length; i++)   {
@@ -297,7 +281,7 @@ if (window.TagifyJS)   {
                             inputText = document.createElement("input");
                             inputText.type = "text";
                             inputText.className = "tagify-me-text";
-                            tagifyInstance.fnAddNewTagInputKeyPress(inputText);
+                            inputText.addEventListener("keypress", tagifyInstance.fnNewTagInputKeyPress);
                             divParent.appendChild(inputText);
                         }
 
