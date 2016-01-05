@@ -160,10 +160,11 @@ if (window.TagifyJS)   {
                 itemValue = itemValue.substr(0, itemValue.indexOf("<a"));
 
                 _removeTagEngine(tagUL, itemValue);
+                el.preventDefault();
             };
 
             tagifyInstance.addItem = function (elemInput, strItemContents)   {
-                var listItem, tagUL, hidden, cleanedVal;
+                var listItem, tagUL, hidden, cleanedVal, anchorX;
 
                 if (elemInput && elemInput.parentElement)   {
                     tagUL = elemInput.parentElement.querySelector(".tagify-me-ul");
@@ -177,21 +178,21 @@ if (window.TagifyJS)   {
                     if (tagUL)    {
                         listItem = document.createElement("li");
                         listItem.className = "tagify-me-li";
-                        listItem.innerHTML = strItemContents;
-                        if (!tagifyInstance.options.readOnly)  {
-                            listItem.innerHTML += '<a href="#" class="tagify-me-a">x</a>';
+                        listItem.appendChild(document.createTextNode(strItemContents));
+
+                        if (!tagifyInstance.options.displayOnly)  {
+                            anchorX = document.createElement("a");
+                            anchorX.className = "tagify-me-a";
+                            anchorX.href = "X";
+                            anchorX.appendChild(document.createTextNode("x"));
+                            anchorX.addEventListener("click", tagifyInstance.fnRemoveTagEventHandler);
+
+                            listItem.appendChild(anchorX);
                         }
                         tagUL.appendChild(listItem);
 
                         cleanedVal = strItemContents.replace(/,/gi, "###");
                         hidden.value = hidden.value ? hidden.value + "," + cleanedVal : cleanedVal;
-
-                        // TODO: Insane overkill. Consider create the "a" with createElement
-                        // and putting the event handler on only each new anchor element here.
-                        [].forEach.call(document.getElementsByClassName("tagify-me-a"), function (anchor) {
-                            anchor.removeEventListener("click", tagifyInstance.fnRemoveTagEventHandler); // Remove if exists so that we don't double up the event handlers listening.
-                            anchor.addEventListener("click", tagifyInstance.fnRemoveTagEventHandler);
-                        });
                     }   else    {
                         _err("Unable to find an associated TagifyJS tag list.");
                     }
