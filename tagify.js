@@ -34,14 +34,14 @@ if (window.TagifyJS)   {
             window.alert("TagifyJS Error: " + strMsg);
         }
 
-        function _domElementFromHtmlString(htmlString, tagType) {
-            var elemReturn;
+        // function _domElementFromHtmlString(htmlString, tagType) {
+        //     var elemReturn;
 
-            tagType = tagType || "span";
-            elemReturn = document.createElement(tagType);
-            elemReturn.innerHTML = htmlString;
-            return elemReturn;
-        }
+        //     tagType = tagType || "span";
+        //     elemReturn = document.createElement(tagType);
+        //     elemReturn.innerHTML = htmlString;
+        //     return elemReturn;
+        // }
 
         function _createInternalCSS()   {
             if (!_createdCSS)   {
@@ -129,70 +129,6 @@ if (window.TagifyJS)   {
             }
         }
 
-        function fnRemoveTagEventHandler(el) {
-            var listItem, tagUL, itemValue;
-
-            listItem = el.currentTarget.parentElement;
-            tagUL = listItem.parentElement;
-            itemValue = listItem.innerHTML;
-            itemValue = itemValue.substr(0, itemValue.indexOf("<a"));
-
-            _removeTagEngine(tagUL, itemValue);
-        }
-
-        function fnAddRemoveTagEventHandler(anchor) {
-            anchor.removeEventListener("click", fnRemoveTagEventHandler); // Remove if exists so that we don't double up the event handlers listening.
-            anchor.addEventListener("click", fnRemoveTagEventHandler);
-        }
-
-        function _addItem(elemInput, strItemContents, readOnly)   {
-            var listItem, tagUL, hiddenInput, cleanedVal;
-
-            if (elemInput && elemInput.parentElement)   {
-                tagUL = elemInput.parentElement.querySelector(".tagify-me-ul");
-                hiddenInput = elemInput.parentElement.querySelector(".tagify-me-hidden");
-
-                // Instead of deduping, I'm cheating by removing the new value
-                // if it already exists.
-                // TODO: Not horribly efficient, natch.
-                _removeTagEngine(tagUL, strItemContents);
-
-                if (tagUL)    {
-                    listItem = document.createElement("li");
-                    listItem.className = "tagify-me-li";
-                    listItem.innerHTML = strItemContents;
-                    if (!readOnly)  {
-                        listItem.innerHTML += '<a href="#" class="tagify-me-a">x</a>';
-                    }
-                    tagUL.appendChild(listItem);
-
-                    cleanedVal = strItemContents.replace(/,/gi, "###");
-                    hiddenInput.value = hiddenInput.value ? hiddenInput.value + "," + cleanedVal : cleanedVal;
-
-                    // TODO: Insane overkill. Consider create the "a" with createElement
-                    // and putting the event handler on only each new anchor element here.
-                    [].forEach.call(document.getElementsByClassName("tagify-me-a"), fnAddRemoveTagEventHandler);
-                }   else    {
-                    _err("Unable to find an associated TagifyJS tag list.");
-                }
-            }   else    {
-                _err("Unable to traverse expected TagifyJS DOM elements.");
-            }
-        }
-
-        function fnNewTagInputKeyPress(e) {
-            if (13 === event.keyCode)   {
-                _addItem(e.target, e.target.value);
-                e.target.value = "";
-                e.preventDefault();
-            }
-        }
-
-        function fnAddNewTagInputKeyPress(txt) {
-            txt.removeEventListener("keypress", fnNewTagInputKeyPress); // Remove if exists so that we don't double up the event handlers listening.
-            txt.addEventListener("keypress", fnNewTagInputKeyPress);
-        }
-
         // http://stackoverflow.com/a/5898748/1028230
         function hasClass(element, cls) {
             return (' ' + element.className + ' ').indexOf(' ' + cls + ' ') > -1;
@@ -202,69 +138,199 @@ if (window.TagifyJS)   {
         // that selector is probably blasted by the conversion to a tagify-me widget.
         // You'll want to put an id on any inputs you want to reference.
         function _tagify(options)  {
-            var returnVal = [],
-                strExposedInput,
+            var tagifyInstance = [],
+                divParent, inputHidden, inputText, ulTags,
                 elementsToTagify,
                 tagHost,
                 strOldCss,
                 aTagValues,
-                hiddenInput,
-                mainTemplate,
-                newElem,
                 i, j, id;
 
-            _createInternalCSS();
+            //-----------------------------------------------------
+            // Add instance methods and properties.
+            //-----------------------------------------------------
+            tagifyInstance.options = options;
 
-            strExposedInput = options.displayOnly ? '' : '<input type="text" id={0}_text" class="tagify-me-text" />';
+            tagifyInstance.fnRemoveTagEventHandler = function (el) {
+                var listItem, tagUL, itemValue;
 
-            mainTemplate = '<div class="{1} tagify-me-div">'
-                // + '<input type="text" id="{0}" class="tagify-me-hidden" style="color:red">'
-                + '<input type="hidden" id="{0}" class="tagify-me-hidden" />'
-                + strExposedInput
-                + '<ul id="{0}_ul" class="tagify-me-ul"></ul>'
-                + '</div>';
+                listItem = el.currentTarget.parentElement;
+                tagUL = listItem.parentElement;
+                itemValue = listItem.innerHTML;
+                itemValue = itemValue.substr(0, itemValue.indexOf("<a"));
 
-            elementsToTagify = document.querySelectorAll(options.selector);
+                _removeTagEngine(tagUL, itemValue);
+            };
 
-            for (i=0; i<elementsToTagify.length; i++)   {
-                tagHost = elementsToTagify[i];
+            tagifyInstance.addItem = function (elemInput, strItemContents)   {
+                var listItem, tagUL, hidden, cleanedVal;
 
-                // TODO: Consider marking each tagify-me element with a common
-                // class and just checking for that here.
-                if (hasClass(tagHost, "tagify-me-div") || hasClass(tagHost, "tagify-me-hidden"))    {
-                    // TODO: Pass back the parent div if it's the hidden input.
-                    returnVal.push(tagHost);
-                }   else    {
-                    newElem = undefined;
-                    strOldCss = tagHost.className;
-                    aTagValues = [];
+                if (elemInput && elemInput.parentElement)   {
+                    tagUL = elemInput.parentElement.querySelector(".tagify-me-ul");
+                    hidden = elemInput.parentElement.querySelector(".tagify-me-hidden");
 
-                    id = "tagifyMe_" + new Date().getTime();
+                    // Instead of deduping, I'm cheating by removing the new value
+                    // if it already exists.
+                    // TODO: Not horribly efficient, natch.
+                    _removeTagEngine(tagUL, strItemContents);
 
-                    if (tagHost.tagName === "INPUT" && tagHost.type === "text")    {
-                        id = tagHost.id || id;
-
-                        aTagValues = tagHost.value.split(',');
-                    }
-
-                    newElem = _domElementFromHtmlString(mainTemplate.format(id, strOldCss));
-                    hiddenInput = newElem.getElementsByClassName("tagify-me-hidden")[0];
-
-                    // tagHost.outerHTML = htmlContent; // Unfortunately, you can't just set the outerHTML for [some?] elements.
-                    tagHost.parentElement.replaceChild(newElem, tagHost);
-                    for (j=0; j<aTagValues.length; j++) {
-                        if (aTagValues[i])  {
-                            _addItem(hiddenInput, aTagValues[j].replace(/###/g, ","), options.displayOnly);
+                    if (tagUL)    {
+                        listItem = document.createElement("li");
+                        listItem.className = "tagify-me-li";
+                        listItem.innerHTML = strItemContents;
+                        if (!tagifyInstance.options.readOnly)  {
+                            listItem.innerHTML += '<a href="#" class="tagify-me-a">x</a>';
                         }
+                        tagUL.appendChild(listItem);
+
+                        cleanedVal = strItemContents.replace(/,/gi, "###");
+                        hidden.value = hidden.value ? hidden.value + "," + cleanedVal : cleanedVal;
+
+                        // TODO: Insane overkill. Consider create the "a" with createElement
+                        // and putting the event handler on only each new anchor element here.
+                        [].forEach.call(document.getElementsByClassName("tagify-me-a"), function (anchor) {
+                            anchor.removeEventListener("click", tagifyInstance.fnRemoveTagEventHandler); // Remove if exists so that we don't double up the event handlers listening.
+                            anchor.addEventListener("click", tagifyInstance.fnRemoveTagEventHandler);
+                        });
+                    }   else    {
+                        _err("Unable to find an associated TagifyJS tag list.");
                     }
-                    returnVal.push(newElem);
+                }   else    {
+                    _err("Unable to traverse expected TagifyJS DOM elements.");
                 }
+            };
+
+            tagifyInstance.fnNewTagInputKeyPress = function (e) {
+                if (13 === event.keyCode)   {
+                    tagifyInstance.addItem(e.target, e.target.value);
+                    e.target.value = "";
+                    e.preventDefault();
+                }
+            };
+
+            tagifyInstance.fnAddNewTagInputKeyPress = function (txt) {
+                txt.removeEventListener("keypress", tagifyInstance.fnNewTagInputKeyPress); // Remove if exists so that we don't double up the event handlers listening.
+                txt.addEventListener("keypress", tagifyInstance.fnNewTagInputKeyPress);
+            };
+
+            tagifyInstance.getValue = function (specificInputName)    {
+                var k, allHiddenInputs,
+                    specificInput,
+                    payload = [];
+
+                if (specificInputName)  {
+                    specificInput = document.getElementById(specificInputName);
+                    allHiddenInputs = specificInput ? [specificInput] : [];
+                }   else    {
+                    allHiddenInputs = document.getElementsByClassName("tagify-me-hidden");
+                }
+
+                // Strip everything but id and value for each input.
+                for (k=0; k < allHiddenInputs.length; k++)    {
+                    // TODO: Potentially ignore displayOnly tagifies.
+                    payload.push({
+                        id: allHiddenInputs[k].id,
+                        value: allHiddenInputs[k].value
+                    });
+                }
+
+                // TODO: I'm not sure if this makes things easier to use. If you unexpectedly
+                // have more than one Tagify on the DOM, this could really bork code expecting
+                // a single value.
+                // return 1 === payload.length ? payload[0].value : payload;
+                // Let's start by doing it iff there's a specific input defined...
+                return specificInputName && 1 === payload.length ? payload[0].value : payload;
+            };
+            //-----------------------------------------------------
+            //-----------------------------------------------------
+
+
+            if (!_domContentLoaded)  {
+                _domDelayedSelectors.push(tagifyInstance.options);
+            }   else    {
+                _createInternalCSS();
+
+                // strExposedInput = tagifyInstance.options.displayOnly
+                //     ? ''
+                //     : '<input type="text" id={0}_text" class="tagify-me-text" />';
+
+                // mainTemplate = '<div class="{1} tagify-me-div">'
+                //     + '<input type="text" id="{0}" class="tagify-me-hidden" style="color:red">'
+                //     // + '<input type="hidden" id="{0}" class="tagify-me-hidden" />'
+                //     + strExposedInput
+                //     + '<ul id="{0}_ul" class="tagify-me-ul"></ul>'
+                //     + '</div>';
+
+                elementsToTagify = document.querySelectorAll(tagifyInstance.options.selector);
+
+                for (i=0; i<elementsToTagify.length; i++)   {
+                    tagHost = elementsToTagify[i];
+
+                    // TODO: Consider marking each tagify-me element with a common
+                    // class and just checking for that here.
+                    if (hasClass(tagHost, "tagify-me-div") || hasClass(tagHost, "tagify-me-hidden"))    {
+                        // TODO: Pass back the parent div if it's the hidden input.
+                        tagifyInstance.push(tagHost);
+                    }   else    {
+                        strOldCss = tagHost.className;
+                        aTagValues = [];
+
+                        id = "tagifyMe_" + new Date().getTime();
+
+                        if (tagHost.tagName === "INPUT" && tagHost.type === "text")    {
+                            id = tagHost.id || id;
+                            aTagValues = tagHost.value.split(',');
+                        }
+
+                        // Set up the Tagify UI elements.
+                        divParent = document.createElement("div");
+                        divParent.className = "{1} tagify-me-div".format(strOldCss);
+
+                        inputHidden = document.createElement("input");
+                        inputHidden.type = "hidden";
+                        inputHidden.className = "tagify-me-hidden";
+                        inputHidden.id = id;
+                        divParent.appendChild(inputHidden);
+
+                        if (!tagifyInstance.options.displayOnly)    {
+                            inputText = document.createElement("input");
+                            inputText.type = "text";
+                            inputText.className = "tagify-me-text";
+                            tagifyInstance.fnAddNewTagInputKeyPress(inputText);
+                            divParent.appendChild(inputText);
+                        }
+
+                        ulTags = document.createElement("ul");
+                        ulTags.className = "tagify-me-ul";
+                        divParent.appendChild(ulTags);
+
+                        tagHost.parentElement.replaceChild(divParent, tagHost);
+                        for (j=0; j<aTagValues.length; j++) {
+                            if (aTagValues[i])  {
+                                tagifyInstance.addItem(inputHidden, aTagValues[j].replace(/###/g, ","), tagifyInstance.options);
+                            }
+                        }
+                        tagifyInstance.push(divParent);
+                    }
+                }
+
             }
-
-            [].forEach.call(document.getElementsByClassName("tagify-me-text"), fnAddNewTagInputKeyPress);
-
-            return returnVal;
+            return tagifyInstance;
         }
+
+        TagifyJS = function (options)    {
+            options = {
+                selector: options.selector || ".tagify-me",
+                displayOnly: options.displayOnly
+            };
+
+            return _tagify(options);
+        };
+
+        // This is to make JSLint happy, which wants Pascal-cased functions to be constructors.
+        TagifyJS.init = function (options)    {
+            return _tagify(options);
+        };
 
         document.addEventListener("DOMContentLoaded", function() {
             var i;
@@ -275,59 +341,5 @@ if (window.TagifyJS)   {
             }
             _domDelayedSelectors = [];
         });
-
-        TagifyJS = function (options)    {
-            var returnVal;
-
-            options = {
-                selector: options.selector || ".tagify-me",
-                displayOnly: options.displayOnly
-            };
-
-            if (_domContentLoaded)  {
-                returnVal = _tagify(options);
-            }   else    {
-                // NOTE: This is why we can't add methods, etc for the return value in _tagify().
-                _domDelayedSelectors.push(options);
-                returnVal = [];
-            }
-            returnVal.options = options;
-
-            return returnVal;
-        };
-
-        // This is to make JSLint happy, which wants Pascal-cased functions to be constructors.
-        TagifyJS.init = function (options)    {
-            this(options);
-        };
-
-        TagifyJS.getValue = function (specificInputName)    {
-            var i, allHiddenInputs,
-                specificInput,
-                payload = [];
-
-            if (specificInputName)  {
-                specificInput = document.getElementById(specificInputName);
-                allHiddenInputs = specificInput ? [specificInput] : [];
-            }   else    {
-                allHiddenInputs = document.getElementsByClassName("tagify-me-hidden");
-            }
-
-            // Strip everything but id and value for each input.
-            for (i=0; i < allHiddenInputs.length; i++)    {
-                // TODO: Potentially ignore displayOnly tagifies.
-                payload.push({
-                    id: allHiddenInputs[i].id,
-                    value: allHiddenInputs[i].value
-                });
-            }
-
-            // TODO: I'm not sure if this makes things easier to use. If you unexpectedly
-            // have more than one Tagify on the DOM, this could really bork code expecting
-            // a single value.
-            // return 1 === payload.length ? payload[0].value : payload;
-            // Let's start by doing it iff there's a specific input defined...
-            return specificInputName && 1 === payload.length ? payload[0].value : payload;
-        };
     }());
 }
