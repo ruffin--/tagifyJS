@@ -29,19 +29,14 @@ if (window.TagifyJS)   {
             _domContentLoaded = false,
             _domDelayedSelectors = [];
 
+        // http://stackoverflow.com/a/9538602/1028230
+        function _isFunction(x) {
+            return x && Object.prototype.toString.call(x) === '[object Function]';
+        }
 
         function _err(strMsg)   {
             window.alert("TagifyJS Error: " + strMsg);
         }
-
-        // function _domElementFromHtmlString(htmlString, tagType) {
-        //     var elemReturn;
-
-        //     tagType = tagType || "span";
-        //     elemReturn = document.createElement(tagType);
-        //     elemReturn.innerHTML = htmlString;
-        //     return elemReturn;
-        // }
 
         function _createInternalCSS()   {
             if (!_createdCSS)   {
@@ -152,14 +147,26 @@ if (window.TagifyJS)   {
             tagifyInstance.options = options;
 
             tagifyInstance.fnRemoveTagEventHandler = function (el) {
-                var listItem, tagUL, itemValue;
+                var listItem, tagUL, itemValue,
+                    bCont = true;
 
                 listItem = el.currentTarget.parentElement;
                 tagUL = listItem.parentElement;
                 itemValue = listItem.innerHTML;
                 itemValue = itemValue.substr(0, itemValue.indexOf("<a"));
 
-                _removeTagEngine(tagUL, itemValue);
+                if (_isFunction(tagifyInstance.options.onChange))   {
+                    bCont = !tagifyInstance.options.onChange({
+                        action: "remove",
+                        value: itemValue
+                    }, el, tagifyInstance);
+                }
+
+                if (bCont)  {
+                    _removeTagEngine(tagUL, itemValue);
+                }
+
+
                 el.preventDefault();
             };
 
@@ -202,9 +209,20 @@ if (window.TagifyJS)   {
             };
 
             tagifyInstance.fnNewTagInputKeyPress = function (e) {
+                var bCont = true;
+
                 if (13 === event.keyCode)   {
-                    tagifyInstance.addItem(e.target, e.target.value);
-                    e.target.value = "";
+                    if (_isFunction(tagifyInstance.options.onChange))   {
+                        bCont = !tagifyInstance.options.onChange({
+                            action: "add",
+                            value: e.target.value
+                        }, e, tagifyInstance);
+                    }
+
+                    if (bCont)  {
+                        tagifyInstance.addItem(e.target, e.target.value);
+                        e.target.value = "";
+                    }
                     e.preventDefault();
                 }
             };
@@ -304,9 +322,11 @@ if (window.TagifyJS)   {
         }
 
         TagifyJS = function (options)    {
+            // Going to explicitly cull non-supported options.
             options = {
                 selector: options.selector || ".tagify-me",
-                displayOnly: options.displayOnly
+                displayOnly: options.displayOnly,
+                onChange: options.onChange
             };
 
             return _tagify(options);

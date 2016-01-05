@@ -32,7 +32,10 @@
 
             document.addEventListener("DOMContentLoaded", function() {
                 tags = TagifyJS({
-                    selector: "#tags"
+                    selector: "#tags",
+                    onChange: function (info, el, tagifyObj)   {
+                        console.log("Change: " + info.action + " :: " + info.value);
+                    }
                 });
 
                 TagifyJS({
