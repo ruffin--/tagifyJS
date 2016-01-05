@@ -287,7 +287,7 @@ if (window.TagifyJS)   {
 
                         // Set up the Tagify UI elements.
                         divParent = document.createElement("div");
-                        divParent.className = "{1} tagify-me-div".format(strOldCss);
+                        divParent.className = "{1} tagify-me-div".format(strOldCss || "");
 
                         inputHidden = document.createElement("input");
                         inputHidden.type = "hidden";
@@ -309,32 +309,33 @@ if (window.TagifyJS)   {
 
                         tagHost.parentElement.replaceChild(divParent, tagHost);
                         for (j=0; j<aTagValues.length; j++) {
-                            if (aTagValues[i])  {
+                            if (aTagValues[j])  {
                                 tagifyInstance.addItem(inputHidden, aTagValues[j].replace(/###/g, ","), tagifyInstance.options);
                             }
                         }
                         tagifyInstance.push(divParent);
                     }
                 }
-
             }
             return tagifyInstance;
         }
 
-        TagifyJS = function (options)    {
-            // Going to explicitly cull non-supported options.
-            options = {
+        // Going to explicitly cull non-supported options.
+        function _cleanOptions(options) {
+            return {
                 selector: options.selector || ".tagify-me",
                 displayOnly: options.displayOnly,
                 onChange: options.onChange
             };
+        }
 
-            return _tagify(options);
+        TagifyJS = function (options)    {
+            return _tagify(_cleanOptions(options));
         };
 
         // This is to make JSLint happy, which wants Pascal-cased functions to be constructors.
         TagifyJS.init = function (options)    {
-            return _tagify(options);
+            return _tagify(_cleanOptions(options));
         };
 
         document.addEventListener("DOMContentLoaded", function() {
