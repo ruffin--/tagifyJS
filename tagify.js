@@ -1,4 +1,4 @@
-/*global TagifyJS:true */
+/*global tagifyJS:true */
 //=====================================================================
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,15 +15,15 @@ String.prototype.format = String.prototype.format || function () {
     });
 };
 
-if (window.TagifyJS)   {
-    window.alert("TagifyJS has detected a namespace collision and either has already "
+if (window.tagifyJS)   {
+    window.alert("tagifyJS has detected a namespace collision and either has already "
         + "loaded or should not load.");
 }   else    {
 
-    TagifyJS = {};
+    tagifyJS = {};
 
     // Start working within a closure. We'll expose what we want to
-    // by attaching to the global `TagifyJS` later.
+    // by attaching to the global `tagifyJS` later.
     (function () {
         var _createdCSS = false,
             _domContentLoaded = false,
@@ -35,7 +35,7 @@ if (window.TagifyJS)   {
         }
 
         function _err(strMsg)   {
-            window.alert("TagifyJS Error: " + strMsg);
+            window.alert("tagifyJS Error: " + strMsg);
         }
 
         function _createInternalCSS()   {
@@ -201,10 +201,10 @@ if (window.TagifyJS)   {
                         cleanedVal = strItemContents.replace(/,/gi, "###");
                         hidden.value = hidden.value ? hidden.value + "," + cleanedVal : cleanedVal;
                     }   else    {
-                        _err("Unable to find an associated TagifyJS tag list.");
+                        _err("Unable to find an associated tagifyJS tag list.");
                     }
                 }   else    {
-                    _err("Unable to traverse expected TagifyJS DOM elements.");
+                    _err("Unable to traverse expected tagifyJS DOM elements.");
                 }
             };
 
@@ -329,12 +329,7 @@ if (window.TagifyJS)   {
             };
         }
 
-        TagifyJS = function (options)    {
-            return _tagify(_cleanOptions(options));
-        };
-
-        // This is to make JSLint happy, which wants Pascal-cased functions to be constructors.
-        TagifyJS.init = function (options)    {
+        tagifyJS = function (options)    {
             return _tagify(_cleanOptions(options));
         };
 
