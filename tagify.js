@@ -5,6 +5,9 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 //=====================================================================
 
+// NOTE: I believe this code intends to require IE9+ currently.
+// Other contemporary "modern" browsers should be fine.
+
 // http://stackoverflow.com/a/5077091/1028230
 String.prototype.format = String.prototype.format || function () {
     var args = arguments;
@@ -227,50 +230,68 @@ if (window.tagifyJS)   {
                 }
             };
 
-            tagifyInstance.getValue = function (specificInputName)    {
-                var k, allHiddenInputs,
+            tagifyInstance.getValues = function (specificInputId)    {
+                var allHiddenInputs,
+                    hiddenInput,
                     specificInput,
                     payload = [];
 
-                if (specificInputName)  {
-                    specificInput = document.getElementById(specificInputName);
+                if (specificInputId && "string" === typeof specificInputId)  {
+                    // Allow & clean CSS id selector style.
+                    specificInputId  = 0 === specificInputId.indexOf("#")
+                        ? specificInputId.substr(1)
+                        : specificInputId;
+                    specificInput = document.getElementById(specificInputId);
                     allHiddenInputs = specificInput ? [specificInput] : [];
-                }   else    {
-                    allHiddenInputs = document.getElementsByClassName("tagify-me-hidden");
+                }   else     {
+                    allHiddenInputs = document.querySelectorAll(tagifyInstance.options.selector);
                 }
 
                 // Strip everything but id and value for each input.
-                for (k=0; k < allHiddenInputs.length; k++)    {
-                    // TODO: Potentially ignore displayOnly tagifies.
-                    payload.push({
-                        id: allHiddenInputs[k].id,
-                        value: allHiddenInputs[k].value
-                    });
+                for (hiddenInput in allHiddenInputs)    {
+                    if (allHiddenInputs.hasOwnProperty(hiddenInput))    {
+                        hiddenInput = allHiddenInputs[hiddenInput];
+                        payload.push({
+                            id: hiddenInput.id,
+                            value: hiddenInput.value
+                        });
+                    }
                 }
 
-                // TODO: I'm not sure if this makes things easier to use. If you unexpectedly
-                // have more than one Tagify on the DOM, this could really bork code expecting
-                // a single value.
-                // return 1 === payload.length ? payload[0].value : payload;
-                // Let's start by doing it iff there's a specific input defined...
-                return specificInputName && 1 === payload.length ? payload[0].value : payload;
+                return payload;
+            };
+
+            // To be used when only one return value is expected, either from the
+            // specificInputId or the original options.selector.
+            // NOTE: Considered throwing an exception if this was called and mutliple
+            // values were returned (payload.length > 1), but went with quieter
+            // implementation.
+            tagifyInstance.getValue = function (specificInputId)    {
+                var payload = tagifyInstance.getValues(specificInputId);
+                return payload.length ? payload[0].value : null;
             };
 
             // TODO: Add a means of using a subselector.
             // You could bullheadedly merge the results of a query with the original selector
             // with a subselector used here.
             tagifyInstance.setValue = function (value)  {
-                var aNewValues = value.split(","), k;
+                var tagifyUL,
+                    aNewValues = value.split(",");
 
-                for (k=0; k<aNewValues.length; k++) {
-                    if (aNewValues[k])  {
-                        tagifyInstance.addItem(inputHidden, aNewValues[k].replace(/###/g, ","), tagifyInstance.options);
-                    }
-                }
+                tagifyInstance.forEach(function (tagifyHiddenInput) {
+                    tagifyHiddenInput.value = value;                                                            // set hidden input value.
+                    tagifyHiddenInput.parentElement.getElementsByClassName("tagify-me-ul")[0].innerHTML = "";   // clear visible tag list
+                    tagifyUL = tagifyHiddenInput.parentElement.getElementsByClassName("tagify-me-ul")[0];
+                    aNewValues.forEach(function (splitVal)  {                                                   // use new value to create new tags.
+                        if (splitVal)  {
+                            tagifyInstance.addItem(tagifyUL, splitVal.replace(/###/g, ","), tagifyInstance.options);
+                        }
+                    });
+                });
             };
             //-----------------------------------------------------
+            // eo tagifyInstance methods.
             //-----------------------------------------------------
-
 
             if (!_domContentLoaded)  {
                 _domDelayedSelectors.push(tagifyInstance.options);

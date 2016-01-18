@@ -22,7 +22,7 @@
 
                 if (btnValue)    {
                     btnValue.addEventListener("click", function () {
-                        tagCsv  = tags.getValue("tags");
+                        tagCsv  = tags.getValues("tags");
                         if (!Array.isArray(tagCsv)) {
                             outige.innerHTML += "Value: " + tagCsv + "<br />";
                         }   else    {
@@ -49,7 +49,7 @@
             });
 
             function changeHidden() {
-                tagify("#tags").setValue("asdf,234,234###asdfs");
+                tagifyJS("#tags").setValue("asdf,234,234###asdfs");
             }
         </script>
      </head>
