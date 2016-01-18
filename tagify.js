@@ -255,6 +255,19 @@ if (window.tagifyJS)   {
                 // Let's start by doing it iff there's a specific input defined...
                 return specificInputName && 1 === payload.length ? payload[0].value : payload;
             };
+
+            // TODO: Add a means of using a subselector.
+            // You could bullheadedly merge the results of a query with the original selector
+            // with a subselector used here.
+            tagifyInstance.setValue = function (value)  {
+                var aNewValues = value.split(","), k;
+
+                for (k=0; k<aNewValues.length; k++) {
+                    if (aNewValues[k])  {
+                        tagifyInstance.addItem(inputHidden, aNewValues[k].replace(/###/g, ","), tagifyInstance.options);
+                    }
+                }
+            };
             //-----------------------------------------------------
             //-----------------------------------------------------
 
@@ -322,6 +335,12 @@ if (window.tagifyJS)   {
 
         // Going to explicitly cull non-supported options.
         function _cleanOptions(options) {
+            if ("string" === typeof options)  {
+                options = {
+                    selector: options
+                };
+            }
+
             return {
                 selector: options.selector || ".tagify-me",
                 displayOnly: options.displayOnly,

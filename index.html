@@ -3,6 +3,10 @@
     <head>
         <title>Tags</title>
 
+        <style>
+            a { text-decoration: none; color:blue; }
+        </style>
+
         <!-- script type="text/javascript" src="./jquery-1.11.3.js"></script -->
         <script type="text/javascript" src="./tagify.js"></script>
         <script>
@@ -31,18 +35,22 @@
             });
 
             document.addEventListener("DOMContentLoaded", function() {
-                tags = TagifyJS({
+                tags = tagifyJS({
                     selector: "#tags",
                     onChange: function (info, el, tagifyObj)   {
                         console.log("Change: " + info.action + " :: " + info.value);
                     }
                 });
 
-                TagifyJS({
+                tagifyJS({
                     selector: "#tags2",
                     displayOnly: true
                 });
             });
+
+            function changeHidden() {
+                tagify("#tags").setValue("asdf,234,234###asdfs");
+            }
         </script>
      </head>
 
@@ -54,6 +62,8 @@
 
             <input type="button" id="btnValue" value="Get Value" />
         </form>
+<br>
+        <a href="#" onclick="changeHidden();return false;">Change values</a><br>
 
         <div id="outige"></div>
 
