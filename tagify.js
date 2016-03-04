@@ -1,4 +1,4 @@
-/*global tagifyJS:true */
+/*global tagifyJS:true, utils:true */
 //=====================================================================
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,6 +16,16 @@ String.prototype.format = String.prototype.format || function () {
         if (m === "}}") { return "}"; }
         return args[n];
     });
+};
+
+if (!window.utils)  {
+    utils = {};
+}
+
+utils.logit = utils.logit || function (str) {
+    if (console && console.log)     {
+        console.log(str);
+    }
 };
 
 if (window.tagifyJS)   {
@@ -140,7 +150,8 @@ if (window.tagifyJS)   {
                 divParent, inputHidden, inputText, ulTags,
                 elementsToTagify,
                 tagHost,
-                strOldCss,
+                strOldCss, strCssForParent,
+                astrSelectorParts, astrSelectorClasses,
                 aTagValues,
                 i, j, id;
 
@@ -159,10 +170,15 @@ if (window.tagifyJS)   {
                 itemValue = itemValue.substr(0, itemValue.indexOf("<a"));
 
                 if (_isFunction(tagifyInstance.options.onChange))   {
-                    bCont = !tagifyInstance.options.onChange({
-                        action: "remove",
-                        value: itemValue
-                    }, el, tagifyInstance);
+                    try {
+                        bCont = !tagifyInstance.options.onChange({
+                            action: "remove",
+                            value: itemValue
+                        }, el, tagifyInstance);
+                    }   catch (ex)  {
+                        window.alert("!!!! Illegal custom function call in tagifyJS remove tag handler.");
+                        utils.logit(ex);
+                    }
                 }
 
                 if (bCont)  {
@@ -216,10 +232,15 @@ if (window.tagifyJS)   {
 
                 if (13 === event.keyCode)   {
                     if (_isFunction(tagifyInstance.options.onChange))   {
-                        bCont = !tagifyInstance.options.onChange({
-                            action: "add",
-                            value: e.target.value
-                        }, e, tagifyInstance);
+                        try     {
+                            bCont = !tagifyInstance.options.onChange({
+                                action: "add",
+                                value: e.target.value
+                            }, e, tagifyInstance);
+                        }   catch (ex)  {
+                            window.alert("!!!! Illegal custom function call in tagifyJS add new value handler.");
+                            utils.logit(ex);
+                        }
                     }
 
                     if (bCont)  {
@@ -251,10 +272,12 @@ if (window.tagifyJS)   {
                 for (hiddenInput in allHiddenInputs)    {
                     if (allHiddenInputs.hasOwnProperty(hiddenInput))    {
                         hiddenInput = allHiddenInputs[hiddenInput];
-                        payload.push({
-                            id: hiddenInput.id,
-                            value: hiddenInput.value
-                        });
+                        if (hiddenInput.id) {
+                            payload.push({
+                                id: hiddenInput.id,
+                                value: hiddenInput.value
+                            });
+                        }
                     }
                 }
 
@@ -293,12 +316,25 @@ if (window.tagifyJS)   {
             // eo tagifyInstance methods.
             //-----------------------------------------------------
 
+            function _cleanOldCss(o)  {
+                var re = new RegExp(" " + o.slice(1) + " ", "g");
+                strCssForParent = strCssForParent.replace(re, "");
+            }
+
+            function _addSelectorClasses(s) {
+                inputHidden.className += s.slice(1) + " ";
+            }
+
             if (!_domContentLoaded)  {
                 _domDelayedSelectors.push(tagifyInstance.options);
             }   else    {
                 _createInternalCSS();
 
                 elementsToTagify = document.querySelectorAll(tagifyInstance.options.selector);
+                astrSelectorParts = tagifyInstance.options.selector.split(" ");
+                astrSelectorClasses = astrSelectorParts.filter(function (o) {
+                    return 0 === o.indexOf(".");
+                });
 
                 for (i=0; i<elementsToTagify.length; i++)   {
                     tagHost = elementsToTagify[i];
@@ -309,7 +345,8 @@ if (window.tagifyJS)   {
                         // TODO: Pass back the parent div if it's the hidden input.
                         tagifyInstance.push(tagHost);
                     }   else    {
-                        strOldCss = tagHost.className;
+                        strOldCss = tagHost.className || "";
+
                         aTagValues = [];
 
                         id = "tagifyMe_" + new Date().getTime();
@@ -321,11 +358,16 @@ if (window.tagifyJS)   {
 
                         // Set up the Tagify UI elements.
                         divParent = document.createElement("div");
-                        divParent.className = "{1} tagify-me-div".format(strOldCss || "");
+                        strCssForParent = " " + strOldCss + " ";
+                        astrSelectorClasses.forEach(_cleanOldCss);
+                        divParent.className = "{0} tagify-me-div".format(strCssForParent.trim());
 
                         inputHidden = document.createElement("input");
                         inputHidden.type = "hidden";
-                        inputHidden.className = "tagify-me-hidden";
+                        inputHidden.className = "tagify-me-hidden ";
+                        astrSelectorClasses.forEach(_addSelectorClasses);
+                        inputHidden.className = inputHidden.className.trim();
+
                         inputHidden.id = id;
                         divParent.appendChild(inputHidden);
 
@@ -356,6 +398,7 @@ if (window.tagifyJS)   {
 
         // Going to explicitly cull non-supported options.
         function _cleanOptions(options) {
+            options = options || ".tagify-me";
             if ("string" === typeof options)  {
                 options = {
                     selector: options
